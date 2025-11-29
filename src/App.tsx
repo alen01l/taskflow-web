@@ -8,12 +8,27 @@ type TaskItem = {
   priority: string;
 };
 
+async function patchTask(id: string, data: any) {
+  return api<TaskItem>(`/tasks/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+async function deleteTaskApi(id: string) {
+  await api<void>(`/tasks/${id}`, { method: "DELETE" });
+}
+
 export default function App() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [tasks, setTasks] = useState<TaskItem[] | null>(null);
   const [title, setTitle] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
 
   // Check session on load
   useEffect(() => {
@@ -67,6 +82,81 @@ export default function App() {
     setTitle("");
   }
 
+  async function startEdit(t: TaskItem) {
+  setEditingId(t.id);
+  setEditingTitle(t.title);
+}
+
+async function saveTitle(t: TaskItem) {
+  const trimmed = editingTitle.trim();
+  if (!trimmed || trimmed === t.title) {
+    setEditingId(null);
+    return;
+  }
+  const updated = await patchTask(t.id, { title: trimmed });
+  setTasks(prev => prev?.map(x => x.id === t.id ? updated : x) ?? null);
+  setEditingId(null);
+}
+
+function cancelEdit() {
+  setEditingId(null);
+}
+
+async function changeStatus(t: TaskItem, status: string) {
+  const updated = await patchTask(t.id, { status });
+  setTasks(prev => prev?.map(x => x.id === t.id ? updated : x) ?? null);
+}
+
+async function changePriority(t: TaskItem, priority: string) {
+  const updated = await patchTask(t.id, { priority });
+  setTasks(prev => prev?.map(x => x.id === t.id ? updated : x) ?? null);
+}
+
+async function deleteTask(t: TaskItem) {
+  const ok = window.confirm(`Delete "${t.title}"?`);
+  if (!ok) return;
+  await deleteTaskApi(t.id);
+  setTasks(prev => prev?.filter(x => x.id !== t.id) ?? null);
+}
+
+function DeleteModal() {
+  if (!showDeleteModal || !taskToDelete) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 transition-opacity duration-150">
+  <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-sm animate-fadeIn">
+        <h2 className="text-lg font-semibold mb-3">Delete task?</h2>
+        <p className="text-gray-700 mb-6">
+          Are you sure you want to delete <span className="font-medium">"{taskToDelete.title}"</span>?
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => {
+              setTaskToDelete(null);
+              setShowDeleteModal(false);
+            }}
+            className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              await deleteTaskApi(taskToDelete.id);
+              setTasks(prev => prev?.filter(x => x.id !== taskToDelete.id) ?? null);
+              setShowDeleteModal(false);
+              setTaskToDelete(null);
+            }}
+            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
 
   // Not logged in → login form
@@ -103,19 +193,95 @@ export default function App() {
       </form>
 
       {!tasks ? (
-        <p>Loading tasks…</p>
-      ) : tasks.length === 0 ? (
-        <p>No tasks yet.</p>
-      ) : (
-        <ul className="space-y-2">
-          {tasks.map((t) => (
-            <li key={t.id} className="border rounded-md p-3 bg-white">
-              <div className="font-medium">{t.title}</div>
-              <div className="text-sm text-gray-600">{t.status} · {t.priority}</div>
-            </li>
-          ))}
-        </ul>
-      )}
+  <p>Loading tasks…</p>
+) : tasks.length === 0 ? (
+  <p>No tasks yet.</p>
+) : (
+  <ul className="space-y-2">
+    {tasks.map((t) => {
+      const isEditing = editingId === t.id;
+      return (
+        <li key={t.id} className="border rounded-md p-3 bg-white flex items-start justify-between gap-3">
+          <div className="flex-1">
+            {/* Title: editable */}
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <input
+                  className="flex-1 border rounded-md px-3 py-2"
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveTitle(t); if (e.key === "Escape") cancelEdit(); }}
+                  autoFocus
+                />
+                <button
+                  className="rounded-md bg-indigo-600 text-white px-3 py-1"
+                  onClick={() => saveTitle(t)}
+                >
+                  Save
+                </button>
+                <button className="rounded-md bg-gray-200 px-3 py-1" onClick={cancelEdit}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="font-medium">{t.title}</div>
+                <button className="text-sm text-indigo-600" onClick={() => startEdit(t)}>
+                  Edit
+                </button>
+              </div>
+            )}
+
+            {/* Meta line */}
+            <div className="mt-1 text-sm text-gray-600">
+              Status: {t.status} · Priority: {t.priority}
+            </div>
+
+            {/* Inline controls */}
+            <div className="mt-2 flex gap-2 items-center">
+              <label className="text-sm">Status</label>
+              <select
+                className="border rounded-md px-2 py-1"
+                value={t.status}
+                onChange={(e) => changeStatus(t, e.target.value)}
+              >
+                <option>Backlog</option>
+                <option>InProgress</option>
+                <option>Done</option>
+              </select>
+
+              <label className="text-sm ml-3">Priority</label>
+              <select
+                className="border rounded-md px-2 py-1"
+                value={t.priority}
+                onChange={(e) => changePriority(t, e.target.value)}
+              >
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Delete */}
+          <div>
+            <button
+              className="rounded-md bg-red-600 text-white px-3 py-1"
+              onClick={() => {
+  setTaskToDelete(t);
+  setShowDeleteModal(true);
+}}
+              title="Delete"
+            >
+              Delete
+            </button>
+          </div>
+        </li>
+      );
+    })}
+  </ul>
+)}
+<DeleteModal />
     </div>
   );
 }
