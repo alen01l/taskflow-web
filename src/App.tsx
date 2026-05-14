@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "./lib/apiClient";
 import { TaskCard } from "./components/tasks/TaskCard";
 import { DeleteModal } from "./components/tasks/DeleteModal";
+import { StatsBar } from "./components/tasks/StatsBar";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -283,12 +284,12 @@ export default function App() {
       </div>
 
       <div className="mx-auto max-w-6xl px-6 py-8">
-        <section className="grid gap-4 sm:grid-cols-4">
-          <StatCard label="Total" value={taskStats.total} />
-          <StatCard label="Backlog" value={taskStats.backlog} />
-          <StatCard label="In progress" value={taskStats.inProgress} />
-          <StatCard label="Done" value={taskStats.done} />
-        </section>
+        <StatsBar
+          total={taskStats.total}
+          backlog={taskStats.backlog}
+          inProgress={taskStats.inProgress}
+          done={taskStats.done}
+        />
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <form onSubmit={addTask} className="flex flex-col gap-3 sm:flex-row">
@@ -354,13 +355,5 @@ export default function App() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-bold">{value}</p>
-    </div>
-  );
-}
 
 
