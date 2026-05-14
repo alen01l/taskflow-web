@@ -1,14 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "./lib/apiClient";
+import { TaskCard } from "./components/tasks/TaskCard";
+import { DeleteModal } from "./components/tasks/DeleteModal";
+import { StatsBar } from "./components/tasks/StatsBar";
+import { LoginForm } from "./components/LoginForm";
+
+type TaskStatus = "Backlog" | "InProgress" | "Done";
+type TaskPriority = "Low" | "Medium" | "High";
 
 type TaskItem = {
   id: string;
   title: string;
-  status: string;
-  priority: string;
+  status: TaskStatus;
+  priority: TaskPriority;
 };
 
-async function patchTask(id: string, data: any) {
+type User = {
+  id: string;
+  email: string;
+};
+
+type TaskPatch = Partial<{
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+}>;
+
+async function patchTask(id: string, data: TaskPatch) {
   return api<TaskItem>(`/tasks/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
@@ -19,49 +37,83 @@ async function deleteTaskApi(id: string) {
   await api<void>(`/tasks/${id}`, { method: "DELETE" });
 }
 
+function getErrorMessage(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
+}
+
+
+
 export default function App() {
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<TaskItem[] | null>(null);
   const [title, setTitle] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [savingTask, setSavingTask] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
 
-  // Check session on load
+  const taskStats = useMemo(() => {
+    const list = tasks ?? [];
+    return {
+      total: list.length,
+      backlog: list.filter((task) => task.status === "Backlog").length,
+      inProgress: list.filter((task) => task.status === "InProgress").length,
+      done: list.filter((task) => task.status === "Done").length,
+    };
+  }, [tasks]);
+
   useEffect(() => {
-    (async () => {
+    let ignore = false;
+
+    async function loadSession() {
       try {
-        const me = await api<{ id: string; email: string } | null>("/auth/me");
+        const me = await api<User | null>("/auth/me");
+        if (ignore) return;
+
         setUser(me);
-        setLoading(false);
+
         if (me) {
           const list = await api<TaskItem[]>("/tasks");
-          setTasks(list);
+          if (!ignore) setTasks(list);
         }
-      } catch {
-        setLoading(false);
+      } catch (err: unknown) {
+        if (!ignore) setPageError(getErrorMessage(err, "Could not load your session."));
+      } finally {
+        if (!ignore) setLoading(false);
       }
-    })();
+    }
+
+    loadSession();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  async function login(e: React.FormEvent) {
+  async function login(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setAuthError(null);
-    const form = e.target as HTMLFormElement;
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
 
     try {
-      await api("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
-      const me = await api<{ id: string; email: string }>("/auth/me");
-      setUser(me);
+      await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const me = await api<User>("/auth/me");
       const list = await api<TaskItem[]>("/tasks");
+
+      setUser(me);
       setTasks(list);
-    } catch (err: any) {
-      setAuthError(err?.message || "Login failed");
+    } catch (err: unknown) {
+      setAuthError(getErrorMessage(err, "Login failed."));
     }
   }
 
@@ -69,219 +121,193 @@ export default function App() {
     await api("/auth/logout", { method: "POST" });
     setUser(null);
     setTasks(null);
-  }
-
-  async function addTask(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim()) return;
-    const created = await api<TaskItem>("/tasks", {
-      method: "POST",
-      body: JSON.stringify({ title: title.trim() }),
-    });
-    setTasks((prev) => (prev ? [created, ...prev] : [created]));
     setTitle("");
-  }
-
-  async function startEdit(t: TaskItem) {
-  setEditingId(t.id);
-  setEditingTitle(t.title);
-}
-
-async function saveTitle(t: TaskItem) {
-  const trimmed = editingTitle.trim();
-  if (!trimmed || trimmed === t.title) {
     setEditingId(null);
-    return;
+    setTaskToDelete(null);
   }
-  const updated = await patchTask(t.id, { title: trimmed });
-  setTasks(prev => prev?.map(x => x.id === t.id ? updated : x) ?? null);
-  setEditingId(null);
-}
 
-function cancelEdit() {
-  setEditingId(null);
-}
+  async function addTask(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = title.trim();
+    if (!trimmed || savingTask) return;
 
-async function changeStatus(t: TaskItem, status: string) {
-  const updated = await patchTask(t.id, { status });
-  setTasks(prev => prev?.map(x => x.id === t.id ? updated : x) ?? null);
-}
+    setSavingTask(true);
+    setPageError(null);
 
-async function changePriority(t: TaskItem, priority: string) {
-  const updated = await patchTask(t.id, { priority });
-  setTasks(prev => prev?.map(x => x.id === t.id ? updated : x) ?? null);
-}
+    try {
+      const created = await api<TaskItem>("/tasks", {
+        method: "POST",
+        body: JSON.stringify({ title: trimmed }),
+      });
 
-async function deleteTask(t: TaskItem) {
-  const ok = window.confirm(`Delete "${t.title}"?`);
-  if (!ok) return;
-  await deleteTaskApi(t.id);
-  setTasks(prev => prev?.filter(x => x.id !== t.id) ?? null);
-}
+      setTasks((prev) => (prev ? [created, ...prev] : [created]));
+      setTitle("");
+    } catch (err: unknown) {
+      setPageError(getErrorMessage(err, "Could not create task."));
+    } finally {
+      setSavingTask(false);
+    }
+  }
 
-function DeleteModal() {
-  if (!showDeleteModal || !taskToDelete) return null;
+  function startEdit(task: TaskItem) {
+    setEditingId(task.id);
+    setEditingTitle(task.title);
+  }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 transition-opacity duration-150">
-  <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-sm animate-fadeIn">
-        <h2 className="text-lg font-semibold mb-3">Delete task?</h2>
-        <p className="text-gray-700 mb-6">
-          Are you sure you want to delete <span className="font-medium">"{taskToDelete.title}"</span>?
-        </p>
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => {
-              setTaskToDelete(null);
-              setShowDeleteModal(false);
-            }}
-            className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={async () => {
-              await deleteTaskApi(taskToDelete.id);
-              setTasks(prev => prev?.filter(x => x.id !== taskToDelete.id) ?? null);
-              setShowDeleteModal(false);
-              setTaskToDelete(null);
-            }}
-            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+  async function saveTitle(task: TaskItem) {
+    const trimmed = editingTitle.trim();
 
+    if (!trimmed || trimmed === task.title) {
+      setEditingId(null);
+      return;
+    }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
+    try {
+      const updated = await patchTask(task.id, { title: trimmed });
+      setTasks((prev) => prev?.map((item) => (item.id === task.id ? updated : item)) ?? null);
+      setEditingId(null);
+    } catch (err: unknown) {
+      setPageError(getErrorMessage(err, "Could not update task title."));
+    }
+  }
 
-  // Not logged in → login form
-  if (!user) {
+  function cancelEdit() {
+    setEditingId(null);
+    setEditingTitle("");
+  }
+
+  async function changeStatus(task: TaskItem, status: TaskStatus) {
+    try {
+      const updated = await patchTask(task.id, { status });
+      setTasks((prev) => prev?.map((item) => (item.id === task.id ? updated : item)) ?? null);
+    } catch (err: unknown) {
+      setPageError(getErrorMessage(err, "Could not update task status."));
+    }
+  }
+
+  async function changePriority(task: TaskItem, priority: TaskPriority) {
+    try {
+      const updated = await patchTask(task.id, { priority });
+      setTasks((prev) => prev?.map((item) => (item.id === task.id ? updated : item)) ?? null);
+    } catch (err: unknown) {
+      setPageError(getErrorMessage(err, "Could not update task priority."));
+    }
+  }
+
+  async function confirmDeleteTask() {
+    if (!taskToDelete) return;
+
+    try {
+      await deleteTaskApi(taskToDelete.id);
+      setTasks((prev) => prev?.filter((item) => item.id !== taskToDelete.id) ?? null);
+      setTaskToDelete(null);
+    } catch (err: unknown) {
+      setPageError(getErrorMessage(err, "Could not delete task."));
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <form onSubmit={login} className="w-full max-w-sm bg-white rounded-xl p-6 shadow">
-          <h1 className="text-xl font-semibold mb-4">TaskFlow Login</h1>
-          {authError && <div className="mb-3 text-sm text-red-600">{authError}</div>}
-          <label className="block text-sm mb-1">Email</label>
-          <input name="email" defaultValue="demo@taskflow.local" className="w-full border rounded-md px-3 py-2 mb-3" />
-          <label className="block text-sm mb-1">Password</label>
-          <input name="password" type="password" defaultValue="Pass123$" className="w-full border rounded-md px-3 py-2 mb-4" />
-          <button className="w-full rounded-md bg-indigo-600 text-white py-2">Sign in</button>
-        </form>
-      </div>
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
+        <div className="rounded-2xl border border-white/10 bg-white/10 px-6 py-4 shadow-2xl backdrop-blur">
+          Loading TaskFlow…
+        </div>
+      </main>
     );
   }
 
-  // Logged in → tasks page
+  if (!user) {
+  return <LoginForm authError={authError} onSubmit={login} />;
+}
+
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">My Tasks</h1>
-          <p className="text-sm text-gray-600">Signed in as {user.email}</p>
+    <main className="min-h-screen bg-slate-100 text-slate-950">
+      <div className="border-b border-white/10 bg-slate-950 text-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <div>
+            <p className="text-sm text-slate-400">Signed in as {user.email}</p>
+            <h1 className="text-2xl font-bold tracking-tight">TaskFlow</h1>
+          </div>
+          <button
+            onClick={logout}
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+          >
+            Logout
+          </button>
         </div>
-        <button onClick={logout} className="rounded-md bg-gray-200 px-3 py-1">Logout</button>
       </div>
 
-      <form onSubmit={addTask} className="flex gap-2 mb-4">
-        <input className="flex-1 border rounded-md px-3 py-2" placeholder="Quick add a task…" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <button className="rounded-md bg-indigo-600 text-white px-4">Add</button>
-      </form>
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        <StatsBar
+          total={taskStats.total}
+          backlog={taskStats.backlog}
+          inProgress={taskStats.inProgress}
+          done={taskStats.done}
+        />
 
-      {!tasks ? (
-  <p>Loading tasks…</p>
-) : tasks.length === 0 ? (
-  <p>No tasks yet.</p>
-) : (
-  <ul className="space-y-2">
-    {tasks.map((t) => {
-      const isEditing = editingId === t.id;
-      return (
-        <li key={t.id} className="border rounded-md p-3 bg-white flex items-start justify-between gap-3">
-          <div className="flex-1">
-            {/* Title: editable */}
-            {isEditing ? (
-              <div className="flex items-center gap-2">
-                <input
-                  className="flex-1 border rounded-md px-3 py-2"
-                  value={editingTitle}
-                  onChange={(e) => setEditingTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") saveTitle(t); if (e.key === "Escape") cancelEdit(); }}
-                  autoFocus
-                />
-                <button
-                  className="rounded-md bg-indigo-600 text-white px-3 py-1"
-                  onClick={() => saveTitle(t)}
-                >
-                  Save
-                </button>
-                <button className="rounded-md bg-gray-200 px-3 py-1" onClick={cancelEdit}>
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <div className="font-medium">{t.title}</div>
-                <button className="text-sm text-indigo-600" onClick={() => startEdit(t)}>
-                  Edit
-                </button>
-              </div>
-            )}
-
-            {/* Meta line */}
-            <div className="mt-1 text-sm text-gray-600">
-              Status: {t.status} · Priority: {t.priority}
-            </div>
-
-            {/* Inline controls */}
-            <div className="mt-2 flex gap-2 items-center">
-              <label className="text-sm">Status</label>
-              <select
-                className="border rounded-md px-2 py-1"
-                value={t.status}
-                onChange={(e) => changeStatus(t, e.target.value)}
-              >
-                <option>Backlog</option>
-                <option>InProgress</option>
-                <option>Done</option>
-              </select>
-
-              <label className="text-sm ml-3">Priority</label>
-              <select
-                className="border rounded-md px-2 py-1"
-                value={t.priority}
-                onChange={(e) => changePriority(t, e.target.value)}
-              >
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Delete */}
-          <div>
+        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <form onSubmit={addTask} className="flex flex-col gap-3 sm:flex-row">
+            <input
+              className="min-w-0 flex-1 rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              placeholder="Quick add a task…"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
             <button
-              className="rounded-md bg-red-600 text-white px-3 py-1"
-              onClick={() => {
-  setTaskToDelete(t);
-  setShowDeleteModal(true);
-}}
-              title="Delete"
+              disabled={savingTask || !title.trim()}
+              className="rounded-2xl bg-indigo-600 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
             >
-              Delete
+              {savingTask ? "Adding…" : "Add task"}
             </button>
+          </form>
+        </section>
+
+        {pageError && (
+          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {pageError}
           </div>
-        </li>
-      );
-    })}
-  </ul>
-)}
-<DeleteModal />
-    </div>
+        )}
+
+        <section className="mt-6">
+          {!tasks ? (
+            <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-500 shadow-sm">Loading tasks…</div>
+          ) : tasks.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+              <h2 className="text-lg font-semibold">No tasks yet</h2>
+              <p className="mt-2 text-slate-500">Add your first task above and start rebuilding momentum.</p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  isEditing={editingId === task.id}
+                  editingTitle={editingTitle}
+                  onEditingTitleChange={setEditingTitle}
+                  onStartEdit={startEdit}
+                  onSaveTitle={saveTitle}
+                  onCancelEdit={cancelEdit}
+                  onChangeStatus={changeStatus}
+                  onChangePriority={changePriority}
+                  onDeleteClick={setTaskToDelete}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {taskToDelete && (
+        <DeleteModal
+          task={taskToDelete}
+          onCancel={() => setTaskToDelete(null)}
+          onConfirm={confirmDeleteTask}
+        />
+      )}
+    </main>
   );
 }
+
+
+
