@@ -4,6 +4,7 @@ import { TaskCard } from "./components/tasks/TaskCard";
 import { DeleteModal } from "./components/tasks/DeleteModal";
 import { StatsBar } from "./components/tasks/StatsBar";
 import { LoginForm } from "./components/LoginForm";
+import { TaskList } from "./components/tasks/TaskList";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -269,33 +270,19 @@ export default function App() {
         )}
 
         <section className="mt-6">
-          {!tasks ? (
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-500 shadow-sm">Loading tasks…</div>
-          ) : tasks.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-              <h2 className="text-lg font-semibold">No tasks yet</h2>
-              <p className="mt-2 text-slate-500">Add your first task above and start rebuilding momentum.</p>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  isEditing={editingId === task.id}
-                  editingTitle={editingTitle}
-                  onEditingTitleChange={setEditingTitle}
-                  onStartEdit={startEdit}
-                  onSaveTitle={saveTitle}
-                  onCancelEdit={cancelEdit}
-                  onChangeStatus={changeStatus}
-                  onChangePriority={changePriority}
-                  onDeleteClick={setTaskToDelete}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
+  <TaskList
+    tasks={tasks}
+    editingId={editingId}
+    editingTitle={editingTitle}
+    onEditingTitleChange={setEditingTitle}
+    onStartEdit={startEdit}
+    onSaveTitle={saveTitle}
+    onCancelEdit={cancelEdit}
+    onChangeStatus={changeStatus}
+    onChangePriority={changePriority}
+    onDeleteClick={setTaskToDelete}
+  />
+</section>
       </div>
 
       {taskToDelete && (
