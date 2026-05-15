@@ -6,6 +6,7 @@ import { LoginForm } from "./components/LoginForm";
 import { TaskList } from "./components/tasks/TaskList";
 import { useTasks } from "./hooks/useTasks";
 import { AddTaskForm } from "./components/tasks/AddTaskForm";
+import { PageHeader } from "./components/layout/PageHeader";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -170,20 +171,10 @@ export default function App() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
-      <div className="border-b border-white/10 bg-slate-950 text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div>
-            <p className="text-sm text-slate-400">Signed in as {user.email}</p>
-            <h1 className="text-2xl font-bold tracking-tight">TaskFlow</h1>
-          </div>
-          <button
-            onClick={logout}
-            className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        email={user.email}
+        onLogout={logout}
+      />
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <StatsBar
