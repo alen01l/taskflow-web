@@ -1,17 +1,10 @@
 import { useMemo, useState } from "react";
-import {
-  createTask,
-  deleteTask,
-  patchTask,
-} from "../api/tasks";
-import type {
-  TaskItem,
-  TaskPriority,
-  TaskStatus,
-} from "../types/task";
+import { createTask, deleteTask, patchTask } from "../api/tasks";
+import type { TaskItem, TaskPriority, TaskStatus } from "../types/task";
 
-export function useTasks(initialTasks: TaskItem[] | null) {
-  const [tasks, setTasks] = useState<TaskItem[] | null>(initialTasks);
+type SetTasks = React.Dispatch<React.SetStateAction<TaskItem[] | null>>;
+
+export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   const [savingTask, setSavingTask] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -30,10 +23,7 @@ export function useTasks(initialTasks: TaskItem[] | null) {
 
   async function addTask(title: string) {
     const created = await createTask(title);
-
-    setTasks((prev) =>
-      prev ? [created, ...prev] : [created]
-    );
+    setTasks((prev) => (prev ? [created, ...prev] : [created]));
   }
 
   function startEdit(task: TaskItem) {
@@ -54,86 +44,45 @@ export function useTasks(initialTasks: TaskItem[] | null) {
       return;
     }
 
-    const updated = await patchTask(task.id, {
-      title: trimmed,
-    });
-
-    setTasks((prev) =>
-      prev?.map((x) =>
-        x.id === task.id ? updated : x
-      ) ?? null
-    );
-
+    const updated = await patchTask(task.id, { title: trimmed });
+    setTasks((prev) => prev?.map((x) => (x.id === task.id ? updated : x)) ?? null);
     setEditingId(null);
   }
 
-  async function changeStatus(
-    task: TaskItem,
-    status: TaskStatus
-  ) {
-    const updated = await patchTask(task.id, {
-      status,
-    });
-
-    setTasks((prev) =>
-      prev?.map((x) =>
-        x.id === task.id ? updated : x
-      ) ?? null
-    );
+  async function changeStatus(task: TaskItem, status: TaskStatus) {
+    const updated = await patchTask(task.id, { status });
+    setTasks((prev) => prev?.map((x) => (x.id === task.id ? updated : x)) ?? null);
   }
 
-  async function changePriority(
-    task: TaskItem,
-    priority: TaskPriority
-  ) {
-    const updated = await patchTask(task.id, {
-      priority,
-    });
-
-    setTasks((prev) =>
-      prev?.map((x) =>
-        x.id === task.id ? updated : x
-      ) ?? null
-    );
+  async function changePriority(task: TaskItem, priority: TaskPriority) {
+    const updated = await patchTask(task.id, { priority });
+    setTasks((prev) => prev?.map((x) => (x.id === task.id ? updated : x)) ?? null);
   }
 
   async function confirmDeleteTask() {
     if (!taskToDelete) return;
 
     await deleteTask(taskToDelete.id);
-
-    setTasks((prev) =>
-      prev?.filter((x) => x.id !== taskToDelete.id) ?? null
-    );
-
+    setTasks((prev) => prev?.filter((x) => x.id !== taskToDelete.id) ?? null);
     setTaskToDelete(null);
   }
 
   return {
     tasks,
-    setTasks,
-
     stats,
-
     savingTask,
     setSavingTask,
-
     editingId,
     editingTitle,
     setEditingTitle,
-
     taskToDelete,
     setTaskToDelete,
-
     addTask,
-
     startEdit,
     cancelEdit,
     saveTitle,
-
     changeStatus,
     changePriority,
-
     confirmDeleteTask,
   };
 }
