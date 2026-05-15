@@ -8,6 +8,7 @@ import { useTasks } from "./hooks/useTasks";
 import { AddTaskForm } from "./components/tasks/AddTaskForm";
 import { PageHeader } from "./components/layout/PageHeader";
 import { PageError } from "./components/common/PageError";
+import { LoadingScreen } from "./components/common/LoadingScreen";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -157,14 +158,8 @@ export default function App() {
 
 
   if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
-        <div className="rounded-2xl border border-white/10 bg-white/10 px-6 py-4 shadow-2xl backdrop-blur">
-          Loading TaskFlow…
-        </div>
-      </main>
-    );
-  }
+  return <LoadingScreen />;
+}
 
   if (!user) {
     return <LoginForm authError={authError} onSubmit={login} />;
