@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "./lib/apiClient";
-import { TaskCard } from "./components/tasks/TaskCard";
 import { DeleteModal } from "./components/tasks/DeleteModal";
 import { StatsBar } from "./components/tasks/StatsBar";
 import { LoginForm } from "./components/LoginForm";
 import { TaskList } from "./components/tasks/TaskList";
+import { useTasks } from "./hooks/useTasks";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -46,25 +46,32 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [tasks, setTasks] = useState<TaskItem[] | null>(null);
   const [title, setTitle] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [savingTask, setSavingTask] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState("");
-  const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
+ 
+  const {
+  tasks,
+  setTasks,
+  stats: taskStats,
+  savingTask,
+  setSavingTask,
+  editingId,
+  editingTitle,
+  setEditingTitle,
+  taskToDelete,
+  setTaskToDelete,
+  addTask: addTaskToList,
+  startEdit,
+  cancelEdit,
+  saveTitle,
+  changeStatus,
+  changePriority,
+  confirmDeleteTask,
+} = useTasks(null);
 
-  const taskStats = useMemo(() => {
-    const list = tasks ?? [];
-    return {
-      total: list.length,
-      backlog: list.filter((task) => task.status === "Backlog").length,
-      inProgress: list.filter((task) => task.status === "InProgress").length,
-      done: list.filter((task) => task.status === "Done").length,
-    };
-  }, [tasks]);
+  
 
   useEffect(() => {
     let ignore = false;
@@ -123,89 +130,28 @@ export default function App() {
     setUser(null);
     setTasks(null);
     setTitle("");
-    setEditingId(null);
     setTaskToDelete(null);
   }
 
   async function addTask(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const trimmed = title.trim();
-    if (!trimmed || savingTask) return;
+  e.preventDefault();
 
-    setSavingTask(true);
-    setPageError(null);
+  const trimmed = title.trim();
+  if (!trimmed || savingTask) return;
 
-    try {
-      const created = await api<TaskItem>("/tasks", {
-        method: "POST",
-        body: JSON.stringify({ title: trimmed }),
-      });
+  setSavingTask(true);
+  setPageError(null);
 
-      setTasks((prev) => (prev ? [created, ...prev] : [created]));
-      setTitle("");
-    } catch (err: unknown) {
-      setPageError(getErrorMessage(err, "Could not create task."));
-    } finally {
-      setSavingTask(false);
-    }
+  try {
+    await addTaskToList(trimmed);
+    setTitle("");
+  } catch (err: unknown) {
+    setPageError(getErrorMessage(err, "Could not create task."));
+  } finally {
+    setSavingTask(false);
   }
+}
 
-  function startEdit(task: TaskItem) {
-    setEditingId(task.id);
-    setEditingTitle(task.title);
-  }
-
-  async function saveTitle(task: TaskItem) {
-    const trimmed = editingTitle.trim();
-
-    if (!trimmed || trimmed === task.title) {
-      setEditingId(null);
-      return;
-    }
-
-    try {
-      const updated = await patchTask(task.id, { title: trimmed });
-      setTasks((prev) => prev?.map((item) => (item.id === task.id ? updated : item)) ?? null);
-      setEditingId(null);
-    } catch (err: unknown) {
-      setPageError(getErrorMessage(err, "Could not update task title."));
-    }
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setEditingTitle("");
-  }
-
-  async function changeStatus(task: TaskItem, status: TaskStatus) {
-    try {
-      const updated = await patchTask(task.id, { status });
-      setTasks((prev) => prev?.map((item) => (item.id === task.id ? updated : item)) ?? null);
-    } catch (err: unknown) {
-      setPageError(getErrorMessage(err, "Could not update task status."));
-    }
-  }
-
-  async function changePriority(task: TaskItem, priority: TaskPriority) {
-    try {
-      const updated = await patchTask(task.id, { priority });
-      setTasks((prev) => prev?.map((item) => (item.id === task.id ? updated : item)) ?? null);
-    } catch (err: unknown) {
-      setPageError(getErrorMessage(err, "Could not update task priority."));
-    }
-  }
-
-  async function confirmDeleteTask() {
-    if (!taskToDelete) return;
-
-    try {
-      await deleteTaskApi(taskToDelete.id);
-      setTasks((prev) => prev?.filter((item) => item.id !== taskToDelete.id) ?? null);
-      setTaskToDelete(null);
-    } catch (err: unknown) {
-      setPageError(getErrorMessage(err, "Could not delete task."));
-    }
-  }
 
   if (loading) {
     return (
