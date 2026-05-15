@@ -5,6 +5,7 @@ import { StatsBar } from "./components/tasks/StatsBar";
 import { LoginForm } from "./components/LoginForm";
 import { TaskList } from "./components/tasks/TaskList";
 import { useTasks } from "./hooks/useTasks";
+import { AddTaskForm } from "./components/tasks/AddTaskForm";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -50,28 +51,28 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
- 
-  const {
-  tasks,
-  setTasks,
-  stats: taskStats,
-  savingTask,
-  setSavingTask,
-  editingId,
-  editingTitle,
-  setEditingTitle,
-  taskToDelete,
-  setTaskToDelete,
-  addTask: addTaskToList,
-  startEdit,
-  cancelEdit,
-  saveTitle,
-  changeStatus,
-  changePriority,
-  confirmDeleteTask,
-} = useTasks(null);
 
-  
+  const {
+    tasks,
+    setTasks,
+    stats: taskStats,
+    savingTask,
+    setSavingTask,
+    editingId,
+    editingTitle,
+    setEditingTitle,
+    taskToDelete,
+    setTaskToDelete,
+    addTask: addTaskToList,
+    startEdit,
+    cancelEdit,
+    saveTitle,
+    changeStatus,
+    changePriority,
+    confirmDeleteTask,
+  } = useTasks(null);
+
+
 
   useEffect(() => {
     let ignore = false;
@@ -134,23 +135,23 @@ export default function App() {
   }
 
   async function addTask(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
+    e.preventDefault();
 
-  const trimmed = title.trim();
-  if (!trimmed || savingTask) return;
+    const trimmed = title.trim();
+    if (!trimmed || savingTask) return;
 
-  setSavingTask(true);
-  setPageError(null);
+    setSavingTask(true);
+    setPageError(null);
 
-  try {
-    await addTaskToList(trimmed);
-    setTitle("");
-  } catch (err: unknown) {
-    setPageError(getErrorMessage(err, "Could not create task."));
-  } finally {
-    setSavingTask(false);
+    try {
+      await addTaskToList(trimmed);
+      setTitle("");
+    } catch (err: unknown) {
+      setPageError(getErrorMessage(err, "Could not create task."));
+    } finally {
+      setSavingTask(false);
+    }
   }
-}
 
 
   if (loading) {
@@ -164,8 +165,8 @@ export default function App() {
   }
 
   if (!user) {
-  return <LoginForm authError={authError} onSubmit={login} />;
-}
+    return <LoginForm authError={authError} onSubmit={login} />;
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
@@ -192,22 +193,12 @@ export default function App() {
           done={taskStats.done}
         />
 
-        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <form onSubmit={addTask} className="flex flex-col gap-3 sm:flex-row">
-            <input
-              className="min-w-0 flex-1 rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-              placeholder="Quick add a task…"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <button
-              disabled={savingTask || !title.trim()}
-              className="rounded-2xl bg-indigo-600 px-6 py-3 font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-            >
-              {savingTask ? "Adding…" : "Add task"}
-            </button>
-          </form>
-        </section>
+        <AddTaskForm
+          title={title}
+          savingTask={savingTask}
+          onTitleChange={setTitle}
+          onSubmit={addTask}
+        />
 
         {pageError && (
           <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -216,19 +207,19 @@ export default function App() {
         )}
 
         <section className="mt-6">
-  <TaskList
-    tasks={tasks}
-    editingId={editingId}
-    editingTitle={editingTitle}
-    onEditingTitleChange={setEditingTitle}
-    onStartEdit={startEdit}
-    onSaveTitle={saveTitle}
-    onCancelEdit={cancelEdit}
-    onChangeStatus={changeStatus}
-    onChangePriority={changePriority}
-    onDeleteClick={setTaskToDelete}
-  />
-</section>
+          <TaskList
+            tasks={tasks}
+            editingId={editingId}
+            editingTitle={editingTitle}
+            onEditingTitleChange={setEditingTitle}
+            onStartEdit={startEdit}
+            onSaveTitle={saveTitle}
+            onCancelEdit={cancelEdit}
+            onChangeStatus={changeStatus}
+            onChangePriority={changePriority}
+            onDeleteClick={setTaskToDelete}
+          />
+        </section>
       </div>
 
       {taskToDelete && (
