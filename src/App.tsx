@@ -7,6 +7,7 @@ import { TaskList } from "./components/tasks/TaskList";
 import { useTasks } from "./hooks/useTasks";
 import { AddTaskForm } from "./components/tasks/AddTaskForm";
 import { PageHeader } from "./components/layout/PageHeader";
+import { PageError } from "./components/common/PageError";
 
 type TaskStatus = "Backlog" | "InProgress" | "Done";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -191,11 +192,7 @@ export default function App() {
           onSubmit={addTask}
         />
 
-        {pageError && (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {pageError}
-          </div>
-        )}
+        {pageError && <PageError message={pageError} />}
 
         <section className="mt-6">
           <TaskList
