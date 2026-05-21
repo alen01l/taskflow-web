@@ -7,6 +7,7 @@ export async function getTasks(query?: GetTasksQuery) {
   if (query?.status) params.set("status", query.status);
   if (query?.priority) params.set("priority", query.priority);
   if (query?.search) params.set("search", query.search);
+  if (query?.sort) params.set("sort", query.sort);
 
   const qs = params.toString();
 
@@ -33,8 +34,11 @@ export async function deleteTask(id: string) {
   });
 }
 
+export type TaskSort = "newest" | "oldest" | "priority" | "status";
+
 export type GetTasksQuery = Partial<{
   status: "Backlog" | "InProgress" | "Done";
   priority: "Low" | "Medium" | "High";
   search: string;
+  sort: TaskSort;
 }>;

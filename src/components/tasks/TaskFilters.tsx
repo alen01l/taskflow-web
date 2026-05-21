@@ -1,4 +1,4 @@
-import type { TaskStatus, TaskPriority } from "../../types/task";
+import type { TaskPriority, TaskStatus } from "../../types/task";
 
 type TaskFiltersProps = {
   search: string;
@@ -37,28 +37,29 @@ export function TaskFilters({
           <option value="">All statuses</option>
           <option value="Backlog">Backlog</option>
           <option value="InProgress">In Progress</option>
-                    <option value="Done">Done</option>
-                </select>
+          <option value="Done">Done</option>
+        </select>
 
-                <select
-                    value={priorityFilter}
-                    onChange={(e) => onPriorityChange(e.target.value as TaskPriority | "")}
-                    className="rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                >
-                    <option value="">All priorities</option>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                </select>
-                <button
-                    type="button"
-                    onClick={onClear}
-                    disabled={!search && !statusFilter && !priorityFilter}
-                    className="rounded-xl bg-slate-100 px-4 py-2 font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    Clear
-                </button>
-            </div>
-        </section>
-    );
+        <select
+          value={priorityFilter}
+          onChange={(e) => onPriorityChange(e.target.value as TaskPriority | "")}
+          className="rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+        >
+          <option value="">All priorities</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={!search && !statusFilter && !priorityFilter}
+          className="rounded-xl bg-slate-100 px-4 py-2 font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Clear
+        </button>
+      </div>
+    </section>
+  );
 }

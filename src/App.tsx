@@ -12,6 +12,8 @@ import { useAuth } from "./hooks/useAuth";
 import { getTasks } from "./api/tasks";
 import type { TaskPriority, TaskStatus } from "./types/task";
 import { TaskFilters } from "./components/tasks/TaskFilters";
+import type { TaskSort } from "./api/tasks";
+import { TaskListToolbar } from "./components/tasks/TaskListToolbar";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -23,6 +25,7 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "">("");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "">("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [sort, setSort] = useState<TaskSort>("newest");
 
   const {
     user,
@@ -72,6 +75,7 @@ useEffect(() => {
           search: debouncedSearch || undefined,
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
+          sort
         });
 
         setTasks(list);
@@ -81,7 +85,7 @@ useEffect(() => {
     }
 
     reloadTasks();
-  }, [user, debouncedSearch, statusFilter, priorityFilter, setTasks, setPageError]);
+  }, [user, debouncedSearch, statusFilter, priorityFilter, setTasks, setPageError, sort]);
 
   function clearFilters() {
   setSearch("");
@@ -144,10 +148,15 @@ useEffect(() => {
           onSearchChange={setSearch}
           onStatusChange={setStatusFilter}
           onPriorityChange={setPriorityFilter}
-          onClear={clearFilters}  
+          onClear={clearFilters}
 
         />
 
+        <TaskListToolbar
+          count={tasks?.length ?? 0}
+          sort={sort}
+          onSortChange={setSort}
+        />
 
         <section className="mt-6">
           <TaskList
