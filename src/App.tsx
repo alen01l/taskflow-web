@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DeleteModal } from "./components/tasks/DeleteModal";
 import { StatsBar } from "./components/tasks/StatsBar";
 import { LoginForm } from "./components/LoginForm";
@@ -9,6 +9,8 @@ import { PageHeader } from "./components/layout/PageHeader";
 import { PageError } from "./components/common/PageError";
 import { LoadingScreen } from "./components/common/LoadingScreen";
 import { useAuth } from "./hooks/useAuth";
+import { getTasks } from "./api/tasks";
+import type { TaskPriority, TaskStatus } from "./types/task";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -16,6 +18,9 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 export default function App() {
   const [title, setTitle] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | "">("");
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "">("");
 
   const {
     user,
@@ -47,6 +52,26 @@ export default function App() {
     changePriority,
     confirmDeleteTask,
   } = useTasks(initialTasks, setTasks);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function reloadTasks() {
+      try {
+        const list = await getTasks({
+          search: search || undefined,
+          status: statusFilter || undefined,
+          priority: priorityFilter || undefined,
+        });
+
+        setTasks(list);
+      } catch (err: unknown) {
+        setPageError(getErrorMessage(err, "Could not load tasks."));
+      }
+    }
+
+    reloadTasks();
+  }, [user, search, statusFilter, priorityFilter, setTasks, setPageError]);
 
   async function addTask(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -95,6 +120,39 @@ export default function App() {
         />
 
         {pageError && <PageError message={pageError} />}
+
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="grid gap-3 md:grid-cols-3">
+            <input
+              placeholder="Search tasks..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            />
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as TaskStatus | "")}
+              className="rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            >
+              <option value="">All statuses</option>
+              <option value="Backlog">Backlog</option>
+              <option value="InProgress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | "")}
+              className="rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            >
+              <option value="">All priorities</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </section>
 
         <section className="mt-6">
           <TaskList
