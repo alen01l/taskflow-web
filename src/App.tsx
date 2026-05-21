@@ -11,7 +11,7 @@ import { LoadingScreen } from "./components/common/LoadingScreen";
 import { useAuth } from "./hooks/useAuth";
 import { getTasks } from "./api/tasks";
 import type { TaskPriority, TaskStatus } from "./types/task";
-import { TaskFilters } from "./components/tasks/TaskFilter";
+import { TaskFilters } from "./components/tasks/TaskFilters";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -83,6 +83,12 @@ useEffect(() => {
     reloadTasks();
   }, [user, debouncedSearch, statusFilter, priorityFilter, setTasks, setPageError]);
 
+  function clearFilters() {
+  setSearch("");
+  setStatusFilter("");
+  setPriorityFilter("");
+}
+
   async function addTask(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -138,6 +144,8 @@ useEffect(() => {
           onSearchChange={setSearch}
           onStatusChange={setStatusFilter}
           onPriorityChange={setPriorityFilter}
+          onClear={clearFilters}  
+
         />
 
 
