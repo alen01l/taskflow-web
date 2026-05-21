@@ -22,6 +22,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "">("");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "">("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   const {
     user,
@@ -54,13 +55,21 @@ export default function App() {
     confirmDeleteTask,
   } = useTasks(initialTasks, setTasks);
 
+useEffect(() => {
+      const timeout = setTimeout(() => {
+        setDebouncedSearch(search);
+      }, 300);
+
+      return () => clearTimeout(timeout);
+    }, [search]);
+
   useEffect(() => {
     if (!user) return;
 
     async function reloadTasks() {
       try {
         const list = await getTasks({
-          search: search || undefined,
+          search: debouncedSearch || undefined,
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
         });
@@ -72,7 +81,7 @@ export default function App() {
     }
 
     reloadTasks();
-  }, [user, search, statusFilter, priorityFilter, setTasks, setPageError]);
+  }, [user, debouncedSearch, statusFilter, priorityFilter, setTasks, setPageError]);
 
   async function addTask(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
