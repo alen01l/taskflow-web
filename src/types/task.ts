@@ -13,4 +13,5 @@ export type TaskPatch = Partial<{
   title: string;
   status: TaskStatus;
   priority: TaskPriority;
+  description: string | null;
 }>;

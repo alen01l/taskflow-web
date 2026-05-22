@@ -8,6 +8,7 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   const [savingTask, setSavingTask] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
   const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
 
   const stats = useMemo(() => {
@@ -29,24 +30,35 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   function startEdit(task: TaskItem) {
     setEditingId(task.id);
     setEditingTitle(task.title);
+    setEditingDescription(task.description ?? "");
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditingTitle("");
+    setEditingDescription("");
   }
 
-  async function saveTitle(task: TaskItem) {
-    const trimmed = editingTitle.trim();
+  async function saveTask(task: TaskItem) {
+    const title = editingTitle.trim();
+    const description = editingDescription.trim() || null;
 
-    if (!trimmed || trimmed === task.title) {
-      setEditingId(null);
+    if (!title) {
       return;
     }
 
-    const updated = await patchTask(task.id, { title: trimmed });
-    setTasks((prev) => prev?.map((x) => (x.id === task.id ? updated : x)) ?? null);
+    const updated = await patchTask(task.id, {
+      title,
+      description,
+    });
+
+    setTasks((prev) =>
+      prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
+    );
+
     setEditingId(null);
+    setEditingTitle("");
+    setEditingDescription("");
   }
 
   async function changeStatus(task: TaskItem, status: TaskStatus) {
@@ -70,17 +82,23 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   return {
     tasks,
     stats,
+
     savingTask,
     setSavingTask,
+
     editingId,
     editingTitle,
     setEditingTitle,
+    editingDescription,
+    setEditingDescription,
+
     taskToDelete,
     setTaskToDelete,
+
     addTask,
     startEdit,
     cancelEdit,
-    saveTitle,
+    saveTask,
     changeStatus,
     changePriority,
     confirmDeleteTask,

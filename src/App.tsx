@@ -40,23 +40,25 @@ export default function App() {
   } = useAuth();
 
   const {
-    tasks,
-    stats: taskStats,
-    savingTask,
-    setSavingTask,
-    editingId,
-    editingTitle,
-    setEditingTitle,
-    taskToDelete,
-    setTaskToDelete,
-    addTask: addTaskToList,
-    startEdit,
-    cancelEdit,
-    saveTitle,
-    changeStatus,
-    changePriority,
-    confirmDeleteTask,
-  } = useTasks(initialTasks, setTasks);
+  tasks,
+  stats: taskStats,
+  savingTask,
+  setSavingTask,
+  editingId,
+  editingTitle,
+  setEditingTitle,
+  editingDescription,
+  setEditingDescription,
+  taskToDelete,
+  setTaskToDelete,
+  addTask: addTaskToList,
+  startEdit,
+  cancelEdit,
+  saveTask,
+  changeStatus,
+  changePriority,
+  confirmDeleteTask,
+} = useTasks(initialTasks, setTasks);
 
 useEffect(() => {
       const timeout = setTimeout(() => {
@@ -163,9 +165,11 @@ useEffect(() => {
             tasks={tasks}
             editingId={editingId}
             editingTitle={editingTitle}
+            editingDescription={editingDescription}
             onEditingTitleChange={setEditingTitle}
+            onEditingDescriptionChange={setEditingDescription}
             onStartEdit={startEdit}
-            onSaveTitle={saveTitle}
+            onSaveTask={saveTask}
             onCancelEdit={cancelEdit}
             onChangeStatus={changeStatus}
             onChangePriority={changePriority}

@@ -7,8 +7,10 @@ type TaskListProps = {
   editingTitle: string;
   onEditingTitleChange: (title: string) => void;
   onStartEdit: (task: TaskItem) => void;
-  onSaveTitle: (task: TaskItem) => void;
+  onSaveTask: (task: TaskItem) => void;
   onCancelEdit: () => void;
+  editingDescription: string;
+  onEditingDescriptionChange: (value: string) => void;
   onChangeStatus: (task: TaskItem, status: TaskStatus) => void;
   onChangePriority: (task: TaskItem, priority: TaskPriority) => void;
   onDeleteClick: (task: TaskItem) => void;
@@ -18,9 +20,11 @@ export function TaskList({
   tasks,
   editingId,
   editingTitle,
+  editingDescription,
   onEditingTitleChange,
+  onEditingDescriptionChange,
   onStartEdit,
-  onSaveTitle,
+  onSaveTask,
   onCancelEdit,
   onChangeStatus,
   onChangePriority,
@@ -53,9 +57,11 @@ export function TaskList({
           task={task}
           isEditing={editingId === task.id}
           editingTitle={editingTitle}
+          editingDescription={editingDescription}
           onEditingTitleChange={onEditingTitleChange}
+          onEditingDescriptionChange={onEditingDescriptionChange}
           onStartEdit={onStartEdit}
-          onSaveTitle={onSaveTitle}
+          onSaveTask={onSaveTask}
           onCancelEdit={onCancelEdit}
           onChangeStatus={onChangeStatus}
           onChangePriority={onChangePriority}
