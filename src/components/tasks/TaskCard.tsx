@@ -98,6 +98,12 @@ export function TaskCard({
             </div>
           )}
 
+          {task.description && (
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+              {task.description}
+            </p>
+          )}
+
           <div className="mt-3 flex flex-wrap gap-2">
             <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(task.status)}`}>
               {statusLabel(task.status)}

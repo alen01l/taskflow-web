@@ -6,6 +6,7 @@ export type TaskItem = {
   title: string;
   status: TaskStatus;
   priority: TaskPriority;
+  description: string | null;
 };
 
 export type TaskPatch = Partial<{
