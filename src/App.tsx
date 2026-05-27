@@ -49,6 +49,8 @@ export default function App() {
   setEditingTitle,
   editingDescription,
   setEditingDescription,
+  editingDueDate,
+  setEditingDueDate,
   taskToDelete,
   setTaskToDelete,
   addTask: addTaskToList,
@@ -168,6 +170,8 @@ useEffect(() => {
             editingDescription={editingDescription}
             onEditingTitleChange={setEditingTitle}
             onEditingDescriptionChange={setEditingDescription}
+            editingDueDate={editingDueDate}
+            onEditingDueDateChange={setEditingDueDate}
             onStartEdit={startEdit}
             onSaveTask={saveTask}
             onCancelEdit={cancelEdit}

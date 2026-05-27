@@ -7,6 +7,7 @@ export type TaskItem = {
   status: TaskStatus;
   priority: TaskPriority;
   description: string | null;
+  dueAtUtc: string | null;
 };
 
 export type TaskPatch = Partial<{
@@ -14,4 +15,5 @@ export type TaskPatch = Partial<{
   status: TaskStatus;
   priority: TaskPriority;
   description: string | null;
+  dueAtUtc: string | null;
 }>;

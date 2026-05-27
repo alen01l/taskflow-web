@@ -5,12 +5,14 @@ type TaskListProps = {
   tasks: TaskItem[] | null;
   editingId: string | null;
   editingTitle: string;
+  editingDescription: string;
+  editingDueDate: string;
   onEditingTitleChange: (title: string) => void;
+  onEditingDescriptionChange: (value: string) => void;
+  onEditingDueDateChange: (value: string) => void;
   onStartEdit: (task: TaskItem) => void;
   onSaveTask: (task: TaskItem) => void;
   onCancelEdit: () => void;
-  editingDescription: string;
-  onEditingDescriptionChange: (value: string) => void;
   onChangeStatus: (task: TaskItem, status: TaskStatus) => void;
   onChangePriority: (task: TaskItem, priority: TaskPriority) => void;
   onDeleteClick: (task: TaskItem) => void;
@@ -21,8 +23,10 @@ export function TaskList({
   editingId,
   editingTitle,
   editingDescription,
+  editingDueDate,
   onEditingTitleChange,
   onEditingDescriptionChange,
+  onEditingDueDateChange,
   onStartEdit,
   onSaveTask,
   onCancelEdit,
@@ -58,8 +62,10 @@ export function TaskList({
           isEditing={editingId === task.id}
           editingTitle={editingTitle}
           editingDescription={editingDescription}
+          editingDueDate={editingDueDate}
           onEditingTitleChange={onEditingTitleChange}
           onEditingDescriptionChange={onEditingDescriptionChange}
+          onEditingDueDateChange={onEditingDueDateChange}
           onStartEdit={onStartEdit}
           onSaveTask={onSaveTask}
           onCancelEdit={onCancelEdit}

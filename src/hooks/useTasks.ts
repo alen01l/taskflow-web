@@ -10,6 +10,7 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   const [editingTitle, setEditingTitle] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
   const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
+  const [editingDueDate, setEditingDueDate] = useState("");
 
   const stats = useMemo(() => {
     const list = tasks ?? [];
@@ -31,12 +32,14 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
     setEditingId(task.id);
     setEditingTitle(task.title);
     setEditingDescription(task.description ?? "");
+    setEditingDueDate(task.dueAtUtc ? task.dueAtUtc.slice(0, 10) : "");
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditingTitle("");
     setEditingDescription("");
+    setEditingDueDate("");
   }
 
   async function saveTask(task: TaskItem) {
@@ -50,6 +53,7 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
     const updated = await patchTask(task.id, {
       title,
       description,
+      dueAtUtc: editingDueDate ? new Date(editingDueDate).toISOString() : null,
     });
 
     setTasks((prev) =>
@@ -59,6 +63,7 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
     setEditingId(null);
     setEditingTitle("");
     setEditingDescription("");
+    
   }
 
   async function changeStatus(task: TaskItem, status: TaskStatus) {
@@ -91,6 +96,8 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
     setEditingTitle,
     editingDescription,
     setEditingDescription,
+    editingDueDate,
+    setEditingDueDate,
 
     taskToDelete,
     setTaskToDelete,

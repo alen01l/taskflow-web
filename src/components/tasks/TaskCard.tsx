@@ -42,6 +42,8 @@ type TaskCardProps = {
   onDeleteClick: (task: TaskItem) => void;
   editingDescription: string;
   onEditingDescriptionChange: (value: string) => void;
+  editingDueDate: string;
+onEditingDueDateChange: (value: string) => void;
 };
 
 export function TaskCard({
