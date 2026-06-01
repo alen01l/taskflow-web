@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DeleteModal } from "./components/tasks/DeleteModal";
 import { StatsBar } from "./components/tasks/StatsBar";
 import { LoginForm } from "./components/LoginForm";
@@ -9,6 +9,11 @@ import { PageHeader } from "./components/layout/PageHeader";
 import { PageError } from "./components/common/PageError";
 import { LoadingScreen } from "./components/common/LoadingScreen";
 import { useAuth } from "./hooks/useAuth";
+import { getTasks } from "./api/tasks";
+import type { TaskPriority, TaskStatus } from "./types/task";
+import { TaskFilters } from "./components/tasks/TaskFilters";
+import type { TaskSort } from "./api/tasks";
+import { TaskListToolbar } from "./components/tasks/TaskListToolbar";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -16,6 +21,11 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 export default function App() {
   const [title, setTitle] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | "">("");
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "">("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [sort, setSort] = useState<TaskSort>("newest");
 
   const {
     user,
@@ -30,23 +40,62 @@ export default function App() {
   } = useAuth();
 
   const {
-    tasks,
-    stats: taskStats,
-    savingTask,
-    setSavingTask,
-    editingId,
-    editingTitle,
-    setEditingTitle,
-    taskToDelete,
-    setTaskToDelete,
-    addTask: addTaskToList,
-    startEdit,
-    cancelEdit,
-    saveTitle,
-    changeStatus,
-    changePriority,
-    confirmDeleteTask,
-  } = useTasks(initialTasks, setTasks);
+  tasks,
+  stats: taskStats,
+  savingTask,
+  setSavingTask,
+  editingId,
+  editingTitle,
+  setEditingTitle,
+  editingDescription,
+  setEditingDescription,
+  editingDueDate,
+  setEditingDueDate,
+  taskToDelete,
+  setTaskToDelete,
+  addTask: addTaskToList,
+  startEdit,
+  cancelEdit,
+  saveTask,
+  changeStatus,
+  changePriority,
+  confirmDeleteTask,
+} = useTasks(initialTasks, setTasks);
+
+useEffect(() => {
+      const timeout = setTimeout(() => {
+        setDebouncedSearch(search);
+      }, 300);
+
+      return () => clearTimeout(timeout);
+    }, [search]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function reloadTasks() {
+      try {
+        const list = await getTasks({
+          search: debouncedSearch || undefined,
+          status: statusFilter || undefined,
+          priority: priorityFilter || undefined,
+          sort
+        });
+
+        setTasks(list);
+      } catch (err: unknown) {
+        setPageError(getErrorMessage(err, "Could not load tasks."));
+      }
+    }
+
+    reloadTasks();
+  }, [user, debouncedSearch, statusFilter, priorityFilter, setTasks, setPageError, sort]);
+
+  function clearFilters() {
+  setSearch("");
+  setStatusFilter("");
+  setPriorityFilter("");
+}
 
   async function addTask(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -96,14 +145,35 @@ export default function App() {
 
         {pageError && <PageError message={pageError} />}
 
+        <TaskFilters
+          search={search}
+          statusFilter={statusFilter}
+          priorityFilter={priorityFilter}
+          onSearchChange={setSearch}
+          onStatusChange={setStatusFilter}
+          onPriorityChange={setPriorityFilter}
+          onClear={clearFilters}
+
+        />
+
+        <TaskListToolbar
+          count={tasks?.length ?? 0}
+          sort={sort}
+          onSortChange={setSort}
+        />
+
         <section className="mt-6">
           <TaskList
             tasks={tasks}
             editingId={editingId}
             editingTitle={editingTitle}
+            editingDescription={editingDescription}
             onEditingTitleChange={setEditingTitle}
+            onEditingDescriptionChange={setEditingDescription}
+            editingDueDate={editingDueDate}
+            onEditingDueDateChange={setEditingDueDate}
             onStartEdit={startEdit}
-            onSaveTitle={saveTitle}
+            onSaveTask={saveTask}
             onCancelEdit={cancelEdit}
             onChangeStatus={changeStatus}
             onChangePriority={changePriority}

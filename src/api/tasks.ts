@@ -1,8 +1,17 @@
 import { api } from "../lib/apiClient";
 import type { TaskItem, TaskPatch } from "../types/task";
 
-export async function getTasks() {
-  return api<TaskItem[]>("/tasks");
+export async function getTasks(query?: GetTasksQuery) {
+  const params = new URLSearchParams();
+
+  if (query?.status) params.set("status", query.status);
+  if (query?.priority) params.set("priority", query.priority);
+  if (query?.search) params.set("search", query.search);
+  if (query?.sort) params.set("sort", query.sort);
+
+  const qs = params.toString();
+
+  return api<TaskItem[]>(qs ? `/tasks?${qs}` : "/tasks");
 }
 
 export async function createTask(title: string) {
@@ -24,3 +33,12 @@ export async function deleteTask(id: string) {
     method: "DELETE",
   });
 }
+
+export type TaskSort = "newest" | "oldest" | "priority" | "status";
+
+export type GetTasksQuery = Partial<{
+  status: "Backlog" | "InProgress" | "Done";
+  priority: "Low" | "Medium" | "High";
+  search: string;
+  sort: TaskSort;
+}>;

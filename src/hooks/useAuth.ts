@@ -30,8 +30,8 @@ export function useAuth() {
         setUser(me);
 
         if (me) {
-          const list = await getTasks();
-
+          const list = await getTasks(); 
+          
           if (!ignore) {
             setTasks(list);
           }

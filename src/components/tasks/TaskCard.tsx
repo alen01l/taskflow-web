@@ -29,17 +29,37 @@ function priorityBadgeClass(priority: TaskPriority) {
   }
 }
 
+function isOverdue(dueAtUtc: string | null, status: TaskItem["status"]) {
+  if (!dueAtUtc || status === "Done") return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(dueAtUtc);
+  dueDate.setHours(0, 0, 0, 0);
+
+  return dueDate < today;
+}
+
+function formatDueDate(dueAtUtc: string) {
+  return new Date(dueAtUtc).toLocaleDateString();
+}
+
 type TaskCardProps = {
   task: TaskItem;
   isEditing: boolean;
   editingTitle: string;
   onEditingTitleChange: (title: string) => void;
   onStartEdit: (task: TaskItem) => void;
-  onSaveTitle: (task: TaskItem) => void;
+  onSaveTask: (task: TaskItem) => void;
   onCancelEdit: () => void;
   onChangeStatus: (task: TaskItem, status: TaskStatus) => void;
   onChangePriority: (task: TaskItem, priority: TaskPriority) => void;
   onDeleteClick: (task: TaskItem) => void;
+  editingDescription: string;
+  onEditingDescriptionChange: (value: string) => void;
+  editingDueDate: string;
+onEditingDueDateChange: (value: string) => void;
 };
 
 export function TaskCard({
@@ -47,36 +67,60 @@ export function TaskCard({
   isEditing,
   editingTitle,
   onEditingTitleChange,
+  editingDescription,
   onStartEdit,
-  onSaveTitle,
+  onSaveTask,
   onCancelEdit,
   onChangeStatus,
   onChangePriority,
+  onEditingDescriptionChange,
   onDeleteClick,
 }: TaskCardProps) {
   return (
-    <li className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <li
+      className={`rounded-3xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${task.status === "Done"
+          ? "border-emerald-200 bg-emerald-50/60 opacity-80"
+          : "border-slate-200 bg-white"
+        }`}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
-          {isEditing ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-                value={editingTitle}
-                onChange={(e) => onEditingTitleChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onSaveTitle(task);
-                  if (e.key === "Escape") onCancelEdit();
-                }}
-                autoFocus
-              />
+          {isEditing ? (<div className="space-y-3">
+            <input
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              value={editingTitle}
+              onChange={(e) => onEditingTitleChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSaveTask(task);
+                if (e.key === "Escape") onCancelEdit();
+              }}
+              autoFocus
+            />
+
+            <textarea
+              value={editingDescription}
+              onChange={(e) => onEditingDescriptionChange(e.target.value)}
+              placeholder="Add a description..."
+              rows={4}
+              className="w-full resize-none rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            />
+            <p
+              className={`text-xs ${editingDescription.length > 1000 ? "text-rose-600" : "text-slate-400"
+                }`}
+            >
+              {editingDescription.length}/1000 characters
+            </p>
+
+            <div className="flex gap-2">
               <button
                 type="button"
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-                onClick={() => onSaveTitle(task)}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300"
+                onClick={() => onSaveTask(task)}
+                disabled={editingDescription.length > 1000}
               >
                 Save
               </button>
+
               <button
                 type="button"
                 className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
@@ -85,9 +129,17 @@ export function TaskCard({
                 Cancel
               </button>
             </div>
+          </div>
           ) : (
             <div className="flex items-start justify-between gap-4">
-              <h2 className="break-words text-lg font-semibold leading-7">{task.title}</h2>
+              <h2
+                className={`break-words text-lg font-semibold leading-7 ${task.status === "Done"
+                  ? "text-slate-500 line-through"
+                  : ""
+                  }`}
+              >
+                {task.title}
+              </h2>
               <button
                 type="button"
                 className="rounded-lg px-2 py-1 text-sm font-medium text-indigo-600 transition hover:bg-indigo-50"
@@ -96,6 +148,31 @@ export function TaskCard({
                 Edit
               </button>
             </div>
+          )}
+
+          {task.description && (
+            <p
+              className={`mt-2 whitespace-pre-wrap text-sm leading-6 ${task.status === "Done"
+                ? "text-slate-400"
+                : "text-slate-600"
+                }`}
+            >
+              {task.description}
+            </p>
+          )}
+
+          {task.dueAtUtc && (
+            <p
+              className={`mt-2 text-sm font-medium ${task.status !== "Done" && new Date(task.dueAtUtc) < new Date()
+                  ? "text-rose-600"
+                  : "text-slate-500"
+                }`}
+            >
+              {task.status !== "Done" && new Date(task.dueAtUtc) < new Date()
+                ? "Overdue"
+                : "Due"}{" "}
+              {new Date(task.dueAtUtc).toLocaleDateString()}
+            </p>
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">
