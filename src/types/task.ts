@@ -12,8 +12,9 @@ export type TaskItem = {
 
 export type TaskPatch = Partial<{
   title: string;
+  description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  description: string | null;
   dueAtUtc: string | null;
+  markComplete: boolean;
 }>;

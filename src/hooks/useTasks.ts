@@ -67,9 +67,15 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   }
 
   async function changeStatus(task: TaskItem, status: TaskStatus) {
-    const updated = await patchTask(task.id, { status });
-    setTasks((prev) => prev?.map((x) => (x.id === task.id ? updated : x)) ?? null);
-  }
+  const updated = await patchTask(task.id, {
+    status,
+    markComplete: status === "Done",
+  });
+
+  setTasks((prev) =>
+    prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
+  );
+}
 
   async function changePriority(task: TaskItem, priority: TaskPriority) {
     const updated = await patchTask(task.id, { priority });
