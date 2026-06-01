@@ -104,6 +104,12 @@ export function TaskCard({
               rows={4}
               className="w-full resize-none rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
             />
+            <p
+              className={`text-xs ${editingDescription.length > 1000 ? "text-rose-600" : "text-slate-400"
+                }`}
+            >
+              {editingDescription.length}/1000 characters
+            </p>
 
             <div className="flex gap-2">
               <button
