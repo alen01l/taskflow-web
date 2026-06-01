@@ -29,6 +29,22 @@ function priorityBadgeClass(priority: TaskPriority) {
   }
 }
 
+function isOverdue(dueAtUtc: string | null, status: TaskItem["status"]) {
+  if (!dueAtUtc || status === "Done") return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(dueAtUtc);
+  dueDate.setHours(0, 0, 0, 0);
+
+  return dueDate < today;
+}
+
+function formatDueDate(dueAtUtc: string) {
+  return new Date(dueAtUtc).toLocaleDateString();
+}
+
 type TaskCardProps = {
   task: TaskItem;
   isEditing: boolean;
@@ -130,11 +146,25 @@ export function TaskCard({
           {task.description && (
             <p
               className={`mt-2 whitespace-pre-wrap text-sm leading-6 ${task.status === "Done"
-                  ? "text-slate-400"
-                  : "text-slate-600"
+                ? "text-slate-400"
+                : "text-slate-600"
                 }`}
             >
               {task.description}
+            </p>
+          )}
+
+          {task.dueAtUtc && (
+            <p
+              className={`mt-2 text-sm font-medium ${task.status !== "Done" && new Date(task.dueAtUtc) < new Date()
+                  ? "text-rose-600"
+                  : "text-slate-500"
+                }`}
+            >
+              {task.status !== "Done" && new Date(task.dueAtUtc) < new Date()
+                ? "Overdue"
+                : "Due"}{" "}
+              {new Date(task.dueAtUtc).toLocaleDateString()}
             </p>
           )}
 
