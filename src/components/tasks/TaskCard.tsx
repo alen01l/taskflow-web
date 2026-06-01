@@ -61,7 +61,12 @@ export function TaskCard({
   onDeleteClick,
 }: TaskCardProps) {
   return (
-    <li className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <li
+      className={`rounded-3xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${task.status === "Done"
+          ? "border-emerald-200 bg-emerald-50/60 opacity-80"
+          : "border-slate-200 bg-white"
+        }`}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           {isEditing ? (<div className="space-y-3">
@@ -104,7 +109,14 @@ export function TaskCard({
           </div>
           ) : (
             <div className="flex items-start justify-between gap-4">
-              <h2 className="break-words text-lg font-semibold leading-7">{task.title}</h2>
+              <h2
+                className={`break-words text-lg font-semibold leading-7 ${task.status === "Done"
+                  ? "text-slate-500 line-through"
+                  : ""
+                  }`}
+              >
+                {task.title}
+              </h2>
               <button
                 type="button"
                 className="rounded-lg px-2 py-1 text-sm font-medium text-indigo-600 transition hover:bg-indigo-50"
@@ -116,7 +128,12 @@ export function TaskCard({
           )}
 
           {task.description && (
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+            <p
+              className={`mt-2 whitespace-pre-wrap text-sm leading-6 ${task.status === "Done"
+                  ? "text-slate-400"
+                  : "text-slate-600"
+                }`}
+            >
               {task.description}
             </p>
           )}
