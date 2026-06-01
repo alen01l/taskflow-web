@@ -44,7 +44,7 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
 
   async function saveTask(task: TaskItem) {
     const title = editingTitle.trim();
-    const description = editingDescription.trim() || null;
+    const description = editingDescription.trim();
 
     if (!title) {
       return;

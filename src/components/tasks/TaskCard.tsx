@@ -114,8 +114,9 @@ export function TaskCard({
             <div className="flex gap-2">
               <button
                 type="button"
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300"
                 onClick={() => onSaveTask(task)}
+                disabled={editingDescription.length > 1000}
               >
                 Save
               </button>
