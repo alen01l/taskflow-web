@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { TaskItem } from "../../types/task";
 
 type EditTaskModalProps = {
@@ -12,6 +13,7 @@ type EditTaskModalProps = {
   onClose: () => void;
 };
 
+
 export function EditTaskModal({
   task,
   editingTitle,
@@ -25,9 +27,29 @@ export function EditTaskModal({
 }: EditTaskModalProps) {
   if (!task) return null;
 
+
+useEffect(() => {
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, [onClose]);
+
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}>
+      <div
+        className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">Edit task</h2>
 
@@ -42,6 +64,7 @@ export function EditTaskModal({
 
         <div className="mt-6 space-y-4">
           <input
+            autoFocus
             value={editingTitle}
             onChange={(e) => onTitleChange(e.target.value)}
             className="w-full rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
@@ -50,6 +73,11 @@ export function EditTaskModal({
           <textarea
             value={editingDescription}
             onChange={(e) => onDescriptionChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.ctrlKey && e.key === "Enter") {
+                onSave(task);
+              }
+            }}
             placeholder="Add a description..."
             rows={6}
             className="w-full resize-none rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
