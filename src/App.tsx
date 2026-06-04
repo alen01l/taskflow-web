@@ -14,6 +14,7 @@ import type { TaskPriority, TaskStatus } from "./types/task";
 import { TaskFilters } from "./components/tasks/TaskFilters";
 import type { TaskSort } from "./api/tasks";
 import { TaskListToolbar } from "./components/tasks/TaskListToolbar";
+import { EditTaskModal } from "./components/tasks/EditTaskModal";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -181,6 +182,18 @@ useEffect(() => {
           />
         </section>
       </div>
+
+      <EditTaskModal
+        task={tasks?.find((task) => task.id === editingId) ?? null}
+        editingTitle={editingTitle}
+        editingDescription={editingDescription}
+        editingDueDate={editingDueDate}
+        onTitleChange={setEditingTitle}
+        onDescriptionChange={setEditingDescription}
+        onDueDateChange={setEditingDueDate}
+        onSave={saveTask}
+        onClose={cancelEdit}
+      />
 
       {taskToDelete && (
         <DeleteModal

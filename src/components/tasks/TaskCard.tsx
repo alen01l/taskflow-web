@@ -85,70 +85,23 @@ export function TaskCard({
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
-          {isEditing ? (<div className="space-y-3">
-            <input
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-              value={editingTitle}
-              onChange={(e) => onEditingTitleChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onSaveTask(task);
-                if (e.key === "Escape") onCancelEdit();
-              }}
-              autoFocus
-            />
+          <div className="flex items-start justify-between gap-4">
+  <h2
+    className={`break-words text-lg font-semibold leading-7 ${
+      task.status === "Done" ? "text-slate-500 line-through" : ""
+    }`}
+  >
+    {task.title}
+  </h2>
 
-            <textarea
-              value={editingDescription}
-              onChange={(e) => onEditingDescriptionChange(e.target.value)}
-              placeholder="Add a description..."
-              rows={4}
-              className="w-full resize-none rounded-xl border border-slate-200 px-4 py-2 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-            />
-            <p
-              className={`text-xs ${editingDescription.length > 1000 ? "text-rose-600" : "text-slate-400"
-                }`}
-            >
-              {editingDescription.length}/1000 characters
-            </p>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300"
-                onClick={() => onSaveTask(task)}
-                disabled={editingDescription.length > 1000}
-              >
-                Save
-              </button>
-
-              <button
-                type="button"
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-                onClick={onCancelEdit}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          ) : (
-            <div className="flex items-start justify-between gap-4">
-              <h2
-                className={`break-words text-lg font-semibold leading-7 ${task.status === "Done"
-                  ? "text-slate-500 line-through"
-                  : ""
-                  }`}
-              >
-                {task.title}
-              </h2>
-              <button
-                type="button"
-                className="rounded-lg px-2 py-1 text-sm font-medium text-indigo-600 transition hover:bg-indigo-50"
-                onClick={() => onStartEdit(task)}
-              >
-                Edit
-              </button>
-            </div>
-          )}
+  <button
+    type="button"
+    className="rounded-lg px-2 py-1 text-sm font-medium text-indigo-600 transition hover:bg-indigo-50"
+    onClick={() => onStartEdit(task)}
+  >
+    Edit
+  </button>
+</div>
 
           {task.description && (
             <p
