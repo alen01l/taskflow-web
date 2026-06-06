@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 import { createTask, deleteTask, patchTask } from "../api/tasks";
 import type { TaskItem, TaskPriority, TaskStatus } from "../types/task";
 
 type SetTasks = React.Dispatch<React.SetStateAction<TaskItem[] | null>>;
+
+function getErrorMessage(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
+}
 
 export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   const [savingTask, setSavingTask] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
-  const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
   const [editingDueDate, setEditingDueDate] = useState("");
+  const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
 
   const stats = useMemo(() => {
     const list = tasks ?? [];
@@ -24,8 +29,14 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
   }, [tasks]);
 
   async function addTask(title: string) {
-    const created = await createTask(title);
-    setTasks((prev) => (prev ? [created, ...prev] : [created]));
+    try {
+      const created = await createTask(title);
+      setTasks((prev) => (prev ? [created, ...prev] : [created]));
+      toast.success("Task created");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Could not create task"));
+      throw err;
+    }
   }
 
   function startEdit(task: TaskItem) {
@@ -47,47 +58,79 @@ export function useTasks(tasks: TaskItem[] | null, setTasks: SetTasks) {
     const description = editingDescription.trim();
 
     if (!title) {
+      toast.error("Title is required");
       return;
     }
 
-    const updated = await patchTask(task.id, {
-      title,
-      description,
-      dueAtUtc: editingDueDate ? new Date(editingDueDate).toISOString() : null,
-    });
+    try {
+      const updated = await patchTask(task.id, {
+        title,
+        description,
+        dueAtUtc: editingDueDate ? new Date(editingDueDate).toISOString() : null,
+      });
 
-    setTasks((prev) =>
-      prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
-    );
+      setTasks((prev) =>
+        prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
+      );
 
-    setEditingId(null);
-    setEditingTitle("");
-    setEditingDescription("");
-    
+      setEditingId(null);
+      setEditingTitle("");
+      setEditingDescription("");
+      setEditingDueDate("");
+
+      toast.success("Task saved");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Could not save task"));
+    }
   }
 
   async function changeStatus(task: TaskItem, status: TaskStatus) {
-  const updated = await patchTask(task.id, {
-    status,
-    markComplete: status === "Done",
-  });
+    try {
+      const updated = await patchTask(task.id, {
+        status,
+        markComplete: status === "Done",
+      });
 
-  setTasks((prev) =>
-    prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
-  );
-}
+      setTasks((prev) =>
+        prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
+      );
+
+      toast.success("Status updated");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Could not update status"));
+    }
+  }
 
   async function changePriority(task: TaskItem, priority: TaskPriority) {
-    const updated = await patchTask(task.id, { priority });
-    setTasks((prev) => prev?.map((x) => (x.id === task.id ? updated : x)) ?? null);
+    try {
+      const updated = await patchTask(task.id, { priority });
+
+      setTasks((prev) =>
+        prev?.map((x) => (x.id === task.id ? updated : x)) ?? null
+      );
+
+      toast.success("Priority updated");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Could not update priority"));
+    }
   }
 
   async function confirmDeleteTask() {
     if (!taskToDelete) return;
 
-    await deleteTask(taskToDelete.id);
-    setTasks((prev) => prev?.filter((x) => x.id !== taskToDelete.id) ?? null);
-    setTaskToDelete(null);
+    try {
+      await deleteTask(taskToDelete.id);
+
+      setTasks((prev) =>
+        prev?.filter((x) => x.id !== taskToDelete.id) ?? null
+      );
+
+      setTaskToDelete(null);
+
+      toast.success("Task deleted");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Could not delete task"));
+    }
   }
 
   return {

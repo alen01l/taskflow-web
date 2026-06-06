@@ -15,6 +15,7 @@ import { TaskFilters } from "./components/tasks/TaskFilters";
 import type { TaskSort } from "./api/tasks";
 import { TaskListToolbar } from "./components/tasks/TaskListToolbar";
 import { EditTaskModal } from "./components/tasks/EditTaskModal";
+import { Toaster } from "react-hot-toast";
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -202,6 +203,7 @@ useEffect(() => {
           onConfirm={confirmDeleteTask}
         />
       )}
+      <Toaster position="bottom-right" />
     </main>
   );
 }
